@@ -199,30 +199,24 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
     /*--- Recompute the free stream velocity ---*/
 
-    su2double Mvec_Inf[MAXNDIM];
     if (nDim == 2) {
       config->GetVelocity_FreeStreamND()[0] = cos(Alpha)*Mach*SoundSpeed/Velocity_Ref;
       config->GetVelocity_FreeStreamND()[1] = sin(Alpha)*Mach*SoundSpeed/Velocity_Ref;
 
-      Mvec_Inf[0] = cos(Alpha)*Mach;
-      Mvec_Inf[1] = sin(Alpha)*Mach;
     }
     if (nDim == 3) {
       config->GetVelocity_FreeStreamND()[0] = cos(Alpha)*cos(Beta)*Mach*SoundSpeed/Velocity_Ref;
       config->GetVelocity_FreeStreamND()[1] = sin(Beta)*Mach*SoundSpeed/Velocity_Ref;
       config->GetVelocity_FreeStreamND()[2] = sin(Alpha)*cos(Beta)*Mach*SoundSpeed/Velocity_Ref;
 
-      Mvec_Inf[0] = cos(Alpha)*cos(Beta)*Mach;
-      Mvec_Inf[1] = sin(Beta)*Mach;
-      Mvec_Inf[2] = sin(Alpha)*cos(Beta)*Mach;
     }
 
     config->SetTemperature_FreeStreamND(Temperature);
     direct_solver->SetTemperature_Inf(Temperature);
     config->SetPressure_FreeStreamND(Pressure);
     direct_solver->SetPressure_Inf(Pressure);
-    direct_solver->ResetNodeInfty(Pressure, MassFrac, Mvec_Inf, Temperature, Temperature_ve,
-                                  config);
+ //   direct_solver->ResetNodeInfty(Pressure, MassFrac, config->GetVelocity_FreeStreamND(), 
+ //                                 Temperature, Temperature_ve, config);
   }
 
   if ((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && config->GetBoolTurbomachinery()){
@@ -338,6 +332,9 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
     for (auto iVar = 0u; iVar < nVar; iVar++) {
       su2double residual = Solution[iVar]-nodes->GetSolution_Old(iPoint,iVar);
+      //cout <<"ExtractAdjoint_Solution:  "<<endl;
+      //cout <<Solution[iVar]<<endl;
+      //cout <<nodes->GetSolution_Old(iPoint,iVar)<<endl;
       nodes->AddSolution(iPoint, iVar, relax*residual);
 
       if (iPoint < nPointDomain) {
@@ -480,6 +477,7 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
     /*--- Get and store the adjoint solution of a point. ---*/
     for (auto iVar = 0u; iVar < nVar; iVar++) {
       Solution[iVar] = nodes->GetSolution(iPoint,iVar);
+      //cout <<"Output: "<<Solution[iVar]<<endl;
     }
 
     /*--- Add dual time contributions to the adjoint solution. Two terms stored for DT-2nd-order. ---*/
@@ -603,7 +601,7 @@ void CDiscAdjSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
                          (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
 
   if (!dual_time) return;
-
+  cout <<"Preprocessingggggggggggggggggggggggggggggggggggggggggggggggg"<<endl;
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint<geometry->GetnPoint(); iPoint++) {
     const auto solution_n = nodes->GetSolution_time_n(iPoint);
@@ -620,7 +618,7 @@ void CDiscAdjSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
 
   /*--- Restart the solution from file information ---*/
-
+  cout <<"this gets called!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<endl;
   auto filename = config->GetSolution_AdjFileName();
   auto restart_filename = config->GetObjFunc_Extension(filename);
   restart_filename = config->GetFilename(restart_filename, "", val_iter);

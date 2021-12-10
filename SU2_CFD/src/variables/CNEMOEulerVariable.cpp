@@ -30,7 +30,7 @@
 
 CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
                                        const su2double *val_massfrac,
-                                       const su2double *val_mach,
+                                       const su2double *val_velocity,
                                        su2double val_temperature,
                                        su2double val_temperature_ve,
                                        unsigned long npoint,
@@ -91,7 +91,7 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   /*--- Compute necessary quantities ---*/
   const su2double rho = fluidmodel->GetDensity();
   const su2double soundspeed = fluidmodel->ComputeSoundSpeed();
-  const su2double sqvel = GeometryToolbox::SquaredNorm(nDim, val_mach) * pow(soundspeed,2);
+  const su2double sqvel = GeometryToolbox::SquaredNorm(nDim, val_velocity); // * pow(soundspeed,2);
   const auto& energies = fluidmodel->ComputeMixtureEnergies();
 
   /*--- Loop over all points --*/
@@ -101,10 +101,15 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       Solution(iPoint,iSpecies)     = rho*val_massfrac[iSpecies];
     for (iDim = 0; iDim < nDim; iDim++)
-      Solution(iPoint,nSpecies+iDim)     = rho*val_mach[iDim]*soundspeed;
+      Solution(iPoint,nSpecies+iDim)     = rho*val_velocity[iDim]; //*soundspeed;
 
     Solution(iPoint,nSpecies+nDim)       = rho*(energies[0]+0.5*sqvel);
     Solution(iPoint,nSpecies+nDim+1)     = rho*(energies[1]);
+
+      /*--- Assign primitive variables ---*/
+  Primitive(iPoint,T_INDEX)   = val_temperature;
+  Primitive(iPoint,TVE_INDEX) = val_temperature_ve;
+  Primitive(iPoint,P_INDEX)   = val_pressure;
   }
 
   Solution_Old = Solution;

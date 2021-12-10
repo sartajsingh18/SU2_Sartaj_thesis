@@ -231,6 +231,13 @@ public:
   inline CNEMOGas* GetFluidModel(void) const final { return FluidModel;}
 
   /*!
+   * \author H. Kline
+   * \brief Compute weighted-sum "combo" objective output
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Evaluate_ObjFunc(const CConfig *config) override;
+
+  /*!
    * \brief Impose the far-field boundary condition using characteristics.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
