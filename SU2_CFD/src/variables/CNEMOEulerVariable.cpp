@@ -2,7 +2,7 @@
  * \file CNEMOEulerVariable.cpp
  * \brief Definition of the solution fields.
  * \author C. Garbacz, W. Maier, S.R. Copeland
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -41,6 +41,7 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
                                        const CConfig *config,
                                        CNEMOGas *fluidmodel)
   : CFlowVariable(npoint, ndim, nvar, nvarprim, nvarprimgrad, config),
+    indices(ndim, config->GetnSpecies()),
     implicit(config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) {
 
   unsigned short iDim, iSpecies;
@@ -263,4 +264,40 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   V[H_INDEX] = (U[nSpecies+nDim] + V[P_INDEX])/V[RHO_INDEX];
 
   return nonPhys;
+}
+
+void CNEMOEulerVariable::Prim2ConsVar(unsigned long iPoint, su2double *V, su2double *U) {
+
+  /*---Useful variables ---*/
+  vector<su2double> rhos;
+  rhos.resize(nSpecies,0.0);
+
+  /*--- Set Indices ---*/
+  //Make these in a general location
+  //unsigned short RHO_INDEX = nodes->GetRhoIndex();
+  //unsigned short T_INDEX   = nodes->GetTIndex();
+  //unsigned short TVE_INDEX = nodes->GetTveIndex();
+  //unsigned short VEL_INDEX = nodes->GetVelIndex();
+
+  /*--- Set densities and mass fraction ---*/
+  for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++){
+    U[iSpecies]    = V[iSpecies];
+    rhos[iSpecies] = V[iSpecies];
+  }
+
+  /*--- Set momentum and compute v^2 ---*/
+  //TODO: geometry toolbox
+  su2double sqvel = 0.0;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++){
+    U[nSpecies+iDim] = V[RHO_INDEX]*V[VEL_INDEX+iDim];
+    sqvel           += V[VEL_INDEX+iDim]*V[VEL_INDEX+iDim];
+  }
+
+  /*--- Set the fluidmodel and recompute energies ---*/
+  FluidModel->SetTDStateRhosTTv( rhos, V[T_INDEX], V[TVE_INDEX]);
+  const auto& Energies = FluidModel->ComputeMixtureEnergies();
+
+  /*--- Set conservative energies ---*/
+  U[nSpecies+nDim]   = V[RHO_INDEX]*(Energies[0]+0.5*sqvel);
+  U[nSpecies+nDim+1] = V[RHO_INDEX]*(Energies[1]);
 }

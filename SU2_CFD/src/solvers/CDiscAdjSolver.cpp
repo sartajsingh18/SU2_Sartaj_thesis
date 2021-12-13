@@ -2,7 +2,7 @@
  * \file CDiscAdjSolver.cpp
  * \brief Main subroutines for solving the discrete adjoint problem.
  * \author T. Albring
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -96,6 +96,9 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   case RUNTIME_TURB_SYS:
     SolverName = "ADJ.TURB";
     break;
+  case RUNTIME_SPECIES_SYS:
+    SolverName = "ADJ.SPECIES";
+    break;
   case RUNTIME_RADIATION_SYS:
     SolverName = "ADJ.RAD";
     break;
@@ -175,12 +178,12 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
   if((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS && !config->GetBoolTurbomachinery())) {
 
-    su2double Velocity_Ref   = config->GetVelocity_Ref();
-    Alpha                    = config->GetAoA()*PI_NUMBER/180.0;
-    Beta                     = config->GetAoS()*PI_NUMBER/180.0;
-    Mach                     = config->GetMach();
-    Pressure                 = config->GetPressure_FreeStreamND();
-    Temperature              = config->GetTemperature_FreeStreamND();
+    su2double Velocity_Ref = config->GetVelocity_Ref();
+    Alpha                  = config->GetAoA()*PI_NUMBER/180.0;
+    Beta                   = config->GetAoS()*PI_NUMBER/180.0;
+    Mach                   = config->GetMach();
+    Pressure               = config->GetPressure_FreeStreamND();
+    Temperature            = config->GetTemperature_FreeStreamND();
     su2double Temperature_ve = config->GetTemperature_ve_FreeStream();
     const su2double *MassFrac = config->GetGas_Composition();
 
@@ -199,24 +202,32 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
     /*--- Recompute the free stream velocity ---*/
 
+    su2double Mvec_Inf[MAXNDIM];
     if (nDim == 2) {
       config->GetVelocity_FreeStreamND()[0] = cos(Alpha)*Mach*SoundSpeed/Velocity_Ref;
       config->GetVelocity_FreeStreamND()[1] = sin(Alpha)*Mach*SoundSpeed/Velocity_Ref;
-
+      Mvec_Inf[0] = cos(Alpha)*Mach;
+      Mvec_Inf[1] = sin(Alpha)*Mach;
     }
     if (nDim == 3) {
       config->GetVelocity_FreeStreamND()[0] = cos(Alpha)*cos(Beta)*Mach*SoundSpeed/Velocity_Ref;
       config->GetVelocity_FreeStreamND()[1] = sin(Beta)*Mach*SoundSpeed/Velocity_Ref;
       config->GetVelocity_FreeStreamND()[2] = sin(Alpha)*cos(Beta)*Mach*SoundSpeed/Velocity_Ref;
-
+      Mvec_Inf[0] = cos(Alpha)*cos(Beta)*Mach;
+      Mvec_Inf[1] = sin(Beta)*Mach;
+      Mvec_Inf[2] = sin(Alpha)*cos(Beta)*Mach;
     }
+    //  TODO:   The following is not necessary if modifying Mach and Alpha of solver, rather than config
+    //    OR:   Alternatively, the config values could be registered instead of the solver values
+    config->SetAoA(Alpha*180.0/PI_NUMBER);
+    config->SetMach(Mach);
 
     config->SetTemperature_FreeStreamND(Temperature);
     direct_solver->SetTemperature_Inf(Temperature);
     config->SetPressure_FreeStreamND(Pressure);
     direct_solver->SetPressure_Inf(Pressure);
- //   direct_solver->ResetNodeInfty(Pressure, MassFrac, config->GetVelocity_FreeStreamND(), 
- //                                 Temperature, Temperature_ve, config);
+    direct_solver->ResetNodeInfty(Pressure, MassFrac, config->GetVelocity_FreeStreamND(), 
+                                Temperature, Temperature_ve, config);
   }
 
   if ((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && config->GetBoolTurbomachinery()){
@@ -311,9 +322,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
   const su2double relax = (config->GetInnerIter()==0) ? 1.0 : config->GetRelaxation_Factor_Adjoint();
 
   /*--- Thread-local residual variables. ---*/
-
   su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
-  const su2double* coordMax[MAXNVAR] = {nullptr};
   unsigned long idxMax[MAXNVAR] = {0};
 
   /*--- Set the old solution and compute residuals. ---*/
@@ -332,19 +341,11 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
     for (auto iVar = 0u; iVar < nVar; iVar++) {
       su2double residual = Solution[iVar]-nodes->GetSolution_Old(iPoint,iVar);
-      //cout <<"ExtractAdjoint_Solution:  "<<endl;
-      //cout <<Solution[iVar]<<endl;
-      //cout <<nodes->GetSolution_Old(iPoint,iVar)<<endl;
       nodes->AddSolution(iPoint, iVar, relax*residual);
 
       if (iPoint < nPointDomain) {
-        /*--- Update residual information for current thread. ---*/
-        resRMS[iVar] += residual*residual;
-        if (fabs(residual) > resMax[iVar]) {
-          resMax[iVar] = fabs(residual);
-          idxMax[iVar] = iPoint;
-          coordMax[iVar] = geometry->nodes->GetCoord(iPoint);
-        }
+        /*--- "Add" residual at (iPoint,iVar) to local residual variables. ---*/
+        ResidualReductions_PerThread(iPoint,iVar,residual,resRMS,resMax,idxMax);
       }
     }
   }
@@ -353,18 +354,8 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
   /*--- Residuals and time_n terms are not needed when evaluating multizone cross terms. ---*/
   if (CrossTerm) return;
 
-  SetResToZero();
-
-  /*--- Reduce residual information over all threads in this rank. ---*/
-  SU2_OMP_CRITICAL
-  for (auto iVar = 0u; iVar < nVar; iVar++) {
-    Residual_RMS[iVar] += resRMS[iVar];
-    AddRes_Max(iVar, resMax[iVar], geometry->nodes->GetGlobalIndex(idxMax[iVar]), coordMax[iVar]);
-  }
-  END_SU2_OMP_CRITICAL
-  SU2_OMP_BARRIER
-
-  SetResidual_RMS(geometry, config);
+  /*--- "Add" residuals from all threads to global residual variables. ---*/
+  ResidualReductions_FromAllThreads(geometry, config, resRMS,resMax,idxMax);
 
   SU2_OMP_MASTER {
     SetIterLinSolver(direct_solver->System.GetIterations());
@@ -477,7 +468,6 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
     /*--- Get and store the adjoint solution of a point. ---*/
     for (auto iVar = 0u; iVar < nVar; iVar++) {
       Solution[iVar] = nodes->GetSolution(iPoint,iVar);
-      //cout <<"Output: "<<Solution[iVar]<<endl;
     }
 
     /*--- Add dual time contributions to the adjoint solution. Two terms stored for DT-2nd-order. ---*/
@@ -596,12 +586,13 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
 
 void CDiscAdjSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
                                    unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+  config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);
 
   const bool dual_time = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
                          (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
 
   if (!dual_time) return;
-  cout <<"Preprocessingggggggggggggggggggggggggggggggggggggggggggggggg"<<endl;
+
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint<geometry->GetnPoint(); iPoint++) {
     const auto solution_n = nodes->GetSolution_time_n(iPoint);
@@ -618,7 +609,7 @@ void CDiscAdjSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
 
   /*--- Restart the solution from file information ---*/
-  cout <<"this gets called!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<endl;
+
   auto filename = config->GetSolution_AdjFileName();
   auto restart_filename = config->GetObjFunc_Extension(filename);
   restart_filename = config->GetFilename(restart_filename, "", val_iter);
@@ -629,8 +620,14 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
   unsigned short skipVars = geometry[MESH_0]->GetnDim();
 
   /*--- Skip flow adjoint variables ---*/
-  if (KindDirect_Solver== RUNTIME_TURB_SYS) {
+  if (KindDirect_Solver == RUNTIME_TURB_SYS) {
     skipVars += nDim + 2;
+  }
+
+  if (KindDirect_Solver == RUNTIME_SPECIES_SYS) {
+    // Skip the number of Flow Vars and Turb Vars to get to the adjoint species vars
+    skipVars += nDim + 2;
+    if (rans) skipVars += solver[MESH_0][TURB_SOL]->GetnVar();
   }
 
   /*--- Skip flow adjoint and turbulent variables ---*/

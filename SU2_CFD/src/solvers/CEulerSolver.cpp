@@ -2,7 +2,7 @@
  * \file CEulerSolver.cpp
  * \brief Main subrotuines for solving Finite-Volume Euler flow problems.
  * \author F. Palacios, T. Economon
- * \version 7.2.0 "Blackbird"
+ * \version 7.2.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -63,8 +63,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   const bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
 
   int Unst_RestartIter = 0;
-  unsigned long iPoint, counter_local = 0, counter_global = 0;
-  unsigned short iDim, iMarker, nLineLets;
+  unsigned long iPoint, iMarker, counter_local = 0, counter_global = 0;
+  unsigned short iDim, nLineLets;
   su2double StaticEnergy, Density, Velocity2, Pressure, Temperature;
 
   /*--- A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain ---*/
@@ -391,7 +391,7 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
   ExtAverageKine = AveragePressure;
   ExtAverageOmega = AveragePressure;
 
-  for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
+  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
     AverageVelocity[iMarker].resize(nSpanWiseSections+1,nDim) = su2double(0.0);
     AverageTurboVelocity[iMarker].resize(nSpanWiseSections+1,nDim) = su2double(0.0);
     OldAverageTurboVelocity[iMarker].resize(nSpanWiseSections+1,nDim) = su2double(0.0);
@@ -418,7 +418,7 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
   OmegaOut = DensityIn;
   NuOut = DensityIn;
 
-  for (unsigned short iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++) {
+  for (unsigned long iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++) {
     TurboVelocityIn[iMarker].resize(nSpanMax+1,nDim) = su2double(0.0);
     TurboVelocityOut[iMarker].resize(nSpanMax+1,nDim) = su2double(0.0);
   }
@@ -431,7 +431,7 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
     CkOutflow1.resize(nMarker);
     CkOutflow2.resize(nMarker);
 
-    for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
+    for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
       CkInflow[iMarker].resize(nSpanWiseSections,2*geometry->GetnFreqSpanMax(INFLOW)+1) = complex<su2double>(0.0,0.0);
       CkOutflow1[iMarker].resize(nSpanWiseSections,2*geometry->GetnFreqSpanMax(OUTFLOW)+1) = complex<su2double>(0.0,0.0);
       CkOutflow2[iMarker] = CkOutflow1[iMarker];
@@ -1030,6 +1030,9 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   Omega_FreeStreamND = Density_FreeStreamND*Tke_FreeStreamND/(Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream());
   config->SetOmega_FreeStreamND(Omega_FreeStreamND);
 
+  const su2double MassDiffusivityND = config->GetDiffusivity_Constant() / (Velocity_Ref * Length_Ref);
+  config->SetDiffusivity_ConstantND(MassDiffusivityND);
+
   /*--- Initialize the dimensionless Fluid Model that will be used to solve the dimensionless problem ---*/
 
   /*--- Auxilary (dimensional) FluidModel no longer needed. ---*/
@@ -1287,6 +1290,12 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
         if      (config->GetSystemMeasurements() == SI) Unit << "1/s";
         else if (config->GetSystemMeasurements() == US) Unit << "1/s";
         NonDimTable << "Spec. Dissipation" << config->GetOmega_FreeStream() << config->GetOmega_FreeStream()/config->GetOmega_FreeStreamND() << Unit.str() << config->GetOmega_FreeStreamND();
+        Unit.str("");
+      }
+      if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+        if      (config->GetSystemMeasurements() == SI) Unit << "m^2/s";
+        else if (config->GetSystemMeasurements() == US) Unit << "ft^2/s";
+        NonDimTable << "Mass Diffusivity" << config->GetDiffusivity_Constant() << config->GetDiffusivity_Constant()/config->GetDiffusivity_ConstantND() << Unit.str() << config->GetDiffusivity_ConstantND();
         Unit.str("");
       }
     }
@@ -1556,7 +1565,6 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
 
 void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
                                  unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
-
   const auto InnerIter = config->GetInnerIter();
   const bool muscl = config->GetMUSCL_Flow() && (iMesh == MESH_0);
   const bool center = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
@@ -4195,7 +4203,8 @@ void CEulerSolver::SetCoefficient_Gradients(CConfig *config) const{
 
 void CEulerSolver::UpdateCustomBoundaryConditions(CGeometry **geometry_container, CConfig *config){
 
-  unsigned short nMGlevel, iMarker;
+  unsigned short nMGlevel;
+  unsigned long iMarker;
 
   // TODO: Update the fluid boundary conditions for MG
   nMGlevel = config->GetnMGLevels();
@@ -9358,7 +9367,7 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
       for (i=0;i<n2t;i++)
         TotTurbPerfOut[i] = -1.0;
       TotMarkerTP = new int[size];
-      for(i=0; i<size; i++){
+      for(int i=0; i<size; i++){
         TotMarkerTP[i]    = -1;
       }
     }
@@ -9370,7 +9379,7 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
     }
 
     if (rank == MASTER_NODE){
-      for (i=0;i<size;i++){
+      for (int i=0;i<size;i++){
         if(TotTurbPerfIn[n1*i] > 0.0){
           densityIn        = TotTurbPerfIn[n1*i];
           pressureIn       = TotTurbPerfIn[n1*i+1];
