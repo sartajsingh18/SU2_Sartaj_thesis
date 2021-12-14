@@ -179,7 +179,7 @@ class CNEMOEulerVariable : public CFlowVariable {
  /*!
   * \brief Set the conserved vector.
   */
-  bool Prim2ConsVar(su2double *U, su2double *V);
+  bool Prim2ConsVar(su2double *U, su2double *V,CFluidModel *FluidModel);
 
   /*---------------------------------------*/
   /*---   Specific variable routines    ---*/

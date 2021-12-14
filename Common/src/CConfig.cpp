@@ -5827,7 +5827,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           if (uq_permute) cout << "Permuting eigenvectors" << endl;
         }
         break;
-      case MAIN_SOLVER::NEMO_EULER: MAIN_SOLVER::case DISC_ADJ_NEMO_EULER:
+      case MAIN_SOLVER::NEMO_EULER: case MAIN_SOLVER::DISC_ADJ_NEMO_EULER:
         if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Euler equations." << endl;
         if(Kind_FluidModel == SU2_NONEQ){
           if ((GasModel != "N2") && (GasModel != "AIR-5") && (GasModel != "ARGON"))

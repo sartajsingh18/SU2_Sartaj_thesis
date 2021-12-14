@@ -88,8 +88,8 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
     if (rank == MASTER_NODE)
       cout << "Direct iteration: Two-temperature Euler/Navier-Stokes/RANS equation." << endl;
 
-    direct_iteration = CIterationFactory::CreateIteration(NEMO_EULER, config);
-    direct_output = COutputFactory::CreateOutput(NEMO_EULER, config, nDim);
+    direct_iteration = CIterationFactory::CreateIteration(MAIN_SOLVER::NEMO_EULER, config);
+    direct_output = COutputFactory::CreateOutput(MAIN_SOLVER::NEMO_EULER, config, nDim);
 
     MainVariables = RECORDING::SOLUTION_VARIABLES;
     if (config->GetDeform_Mesh()) {

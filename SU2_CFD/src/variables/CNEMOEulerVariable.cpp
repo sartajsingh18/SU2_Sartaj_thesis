@@ -266,7 +266,9 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   return nonPhys;
 }
 
-void CNEMOEulerVariable::Prim2ConsVar(unsigned long iPoint, su2double *V, su2double *U) {
+bool CNEMOEulerVariable::Prim2ConsVar(su2double *V, su2double *U, CFluidModel *FluidModel) {
+
+  fluidmodel = static_cast<CNEMOGas*>(FluidModel);
 
   /*---Useful variables ---*/
   vector<su2double> rhos;
@@ -274,10 +276,10 @@ void CNEMOEulerVariable::Prim2ConsVar(unsigned long iPoint, su2double *V, su2dou
 
   /*--- Set Indices ---*/
   //Make these in a general location
-  //unsigned short RHO_INDEX = nodes->GetRhoIndex();
-  //unsigned short T_INDEX   = nodes->GetTIndex();
-  //unsigned short TVE_INDEX = nodes->GetTveIndex();
-  //unsigned short VEL_INDEX = nodes->GetVelIndex();
+  unsigned short RHO_INDEX = nSpecies+nDim+3; //nodes->GetRhoIndex();
+  unsigned short T_INDEX   = nSpecies; //nodes->GetTIndex();
+  unsigned short TVE_INDEX = nSpecies+1; //nodes->GetTveIndex();
+  unsigned short VEL_INDEX = nSpecies+2; //nodes->GetVelIndex();
 
   /*--- Set densities and mass fraction ---*/
   for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++){
@@ -294,8 +296,8 @@ void CNEMOEulerVariable::Prim2ConsVar(unsigned long iPoint, su2double *V, su2dou
   }
 
   /*--- Set the fluidmodel and recompute energies ---*/
-  FluidModel->SetTDStateRhosTTv( rhos, V[T_INDEX], V[TVE_INDEX]);
-  const auto& Energies = FluidModel->ComputeMixtureEnergies();
+  fluidmodel->SetTDStateRhosTTv( rhos, V[T_INDEX], V[TVE_INDEX]);
+  const auto& Energies = fluidmodel->ComputeMixtureEnergies();
 
   /*--- Set conservative energies ---*/
   U[nSpecies+nDim]   = V[RHO_INDEX]*(Energies[0]+0.5*sqvel);
