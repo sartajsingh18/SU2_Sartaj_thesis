@@ -229,10 +229,10 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
 
   /*--- Enforce freestream Mach ---*/
   //TODO FROM ADAP_TNE2
-  for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    node_infty->SetPrimitive(0, nSpecies+2+iDim, Mvec_Inf[iDim]*node_infty->GetSoundSpeed(0));
-  nodes->Prim2ConsVar(node_infty->GetPrimitive(0), node_infty->GetSolution(0), FluidModel);
-  node_infty->SetSolution_Old(0, node_infty->GetSolution(0));
+//  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+//    node_infty->SetPrimitive(0, nSpecies+2+iDim, Mvec_Inf[iDim]*node_infty->GetSoundSpeed(0));
+//  nodes->Prim2ConsVar(node_infty->GetPrimitive(0), node_infty->GetSolution(0), FluidModel);
+//  node_infty->SetSolution_Old(0, node_infty->GetSolution(0));
  
   /*--- Initial comms. ---*/
 
