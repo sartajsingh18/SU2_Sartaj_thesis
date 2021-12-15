@@ -132,6 +132,8 @@ void CAdjNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("MAX_ADJ_MOMENTUM-Z", "max[A_RhoW]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint momentum z-component", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the adjoint energy.
   AddHistoryOutput("MAX_ADJ_ENERGY",     "max[A_E]",    ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint energy.", HistoryFieldType::RESIDUAL);
+  /// DESCRIPTION: Maximum residual of the adjoint ve-energy.
+  AddHistoryOutput("MAX_ADJ_ENERGY_VE",     "max[A_Eve]",    ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint ve-energy.", HistoryFieldType::RESIDUAL);
 
   AddHistoryOutputFields_AdjScalarMAX_RES(config);
   /// END_GROUP
@@ -148,6 +150,8 @@ void CAdjNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("BGS_ADJ_MOMENTUM-Z", "bgs[A_RhoW]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint momentum z-component", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: BGS residual of the adjoint energy.
   AddHistoryOutput("BGS_ADJ_ENERGY",     "bgs[A_E]",    ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint energy.", HistoryFieldType::RESIDUAL);
+  /// DESCRIPTION: BGS residual of the adjoint ve-energy.
+  AddHistoryOutput("BGS_ADJ_ENERGY_VE",     "bgs[A_Eve]",    ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint ve-energy.", HistoryFieldType::RESIDUAL);
 
   AddHistoryOutputFields_AdjScalarBGS_RES(config);
   /// END_GROUP
@@ -199,26 +203,31 @@ void CAdjNEMOCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, C
 
   }
 
-  SetHistoryOutputValue("MAX_ADJ_DENSITY", log10(adjflow_solver->GetRes_Max(0)));
-  SetHistoryOutputValue("MAX_ADJ_MOMENTUM-X", log10(adjflow_solver->GetRes_Max(1)));
-  SetHistoryOutputValue("MAX_ADJ_MOMENTUM-Y", log10(adjflow_solver->GetRes_Max(2)));
+  for (auto iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    SetHistoryOutputValue("MAX_ADJ_DENSITY_" + std::to_string(iSpecies), log10(adjflow_solver->GetRes_RMS(iSpecies)));
+  SetHistoryOutputValue("MAX_ADJ_MOMENTUM-X", log10(adjflow_solver->GetRes_Max(nSpecies)));
+  SetHistoryOutputValue("MAX_ADJ_MOMENTUM-Y", log10(adjflow_solver->GetRes_Max(nSpecies+1)));
   if (geometry->GetnDim() == 3) {
-    SetHistoryOutputValue("MAX_ADJ_MOMENTUM-Z", log10(adjflow_solver->GetRes_Max(3)));
-    SetHistoryOutputValue("MAX_ADJ_ENERGY", log10(adjflow_solver->GetRes_Max(4)));
+    SetHistoryOutputValue("MAX_ADJ_MOMENTUM-Z", log10(adjflow_solver->GetRes_Max(nSpecies+2)));
+    SetHistoryOutputValue("MAX_ADJ_ENERGY", log10(adjflow_solver->GetRes_Max(nSpecies+3)));
+    SetHistoryOutputValue("MAX_ADJ_ENERGY_VE", log10(adjflow_solver->GetRes_Max(nSpecies+4)));
   } else {
-    SetHistoryOutputValue("MAX_ADJ_ENERGY", log10(adjflow_solver->GetRes_Max(3)));
+    SetHistoryOutputValue("MAX_ADJ_ENERGY", log10(adjflow_solver->GetRes_Max(nSpecies+2)));
+    SetHistoryOutputValue("MAX_ADJ_ENERGY_VE", log10(adjflow_solver->GetRes_Max(nSpecies+3)));
   }
 
   if (multiZone){
-    SetHistoryOutputValue("BGS_ADJ_DENSITY", log10(adjflow_solver->GetRes_BGS(0)));
-    SetHistoryOutputValue("BGS_ADJ_MOMENTUM-X", log10(adjflow_solver->GetRes_BGS(1)));
-    SetHistoryOutputValue("BGS_ADJ_MOMENTUM-Y", log10(adjflow_solver->GetRes_BGS(2)));
+    for (auto iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+      SetHistoryOutputValue("BGS_ADJ_DENSITY_" + std::to_string(iSpecies), log10(adjflow_solver->GetRes_BGS(iSpecies)));
+    SetHistoryOutputValue("BGS_ADJ_MOMENTUM-X", log10(adjflow_solver->GetRes_BGS(nSpecies)));
+    SetHistoryOutputValue("BGS_ADJ_MOMENTUM-Y", log10(adjflow_solver->GetRes_BGS(nSpecies+1)));
     if (geometry->GetnDim() == 3) {
-      SetHistoryOutputValue("BGS_ADJ_MOMENTUM-Z", log10(adjflow_solver->GetRes_BGS(3)));
-      SetHistoryOutputValue("BGS_ADJ_ENERGY", log10(adjflow_solver->GetRes_BGS(4)));
+      SetHistoryOutputValue("BGS_ADJ_MOMENTUM-Z", log10(adjflow_solver->GetRes_BGS(nSpecies+2)));
+      SetHistoryOutputValue("BGS_ADJ_ENERGY", log10(adjflow_solver->GetRes_BGS(nSpecies+3)));
+      SetHistoryOutputValue("BGS_ADJ_ENERGY_VE", log10(adjflow_solver->GetRes_BGS(nSpecies+4)));
     } else {
-      SetHistoryOutputValue("BGS_ADJ_ENERGY", log10(adjflow_solver->GetRes_BGS(3)));
-    }
+      SetHistoryOutputValue("BGS_ADJ_ENERGY", log10(adjflow_solver->GetRes_BGS(nSpecies+2)));
+      SetHistoryOutputValue("BGS_ADJ_ENERGY_VE", log10(adjflow_solver->GetRes_BGS(nSpecies+3)));    }
   }
 
   SetHistoryOutputValue("SENS_GEO", adjflow_solver->GetTotal_Sens_Geo());
@@ -261,6 +270,8 @@ void CAdjNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("ADJ_MOMENTUM-Z", "Adjoint_Momentum_z", "SOLUTION", "z-component of the adjoint momentum vector");
   /// DESCRIPTION: Adjoint energy.
   AddVolumeOutput("ADJ_ENERGY", "Adjoint_Energy", "SOLUTION", "Adjoint energy");
+  /// DESCRIPTION: Adjoint energy.
+  AddVolumeOutput("ADJ_ENERGY_VE", "Adjoint_Energy_VE", "SOLUTION", "Adjoint ve-energy");
 
   SetVolumeOutputFields_AdjScalarSolution(config);
   /// END_GROUP
