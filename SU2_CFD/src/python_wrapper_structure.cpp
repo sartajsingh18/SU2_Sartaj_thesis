@@ -591,6 +591,7 @@ void CDriver::ResetConvergence() {
 
     case MAIN_SOLVER::ADJ_EULER: case MAIN_SOLVER::ADJ_NAVIER_STOKES: case MAIN_SOLVER::ADJ_RANS: case MAIN_SOLVER::DISC_ADJ_EULER: case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_RANS:
     case MAIN_SOLVER::DISC_ADJ_INC_EULER: case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES: case MAIN_SOLVER::DISC_ADJ_INC_RANS:
+    case MAIN_SOLVER::DISC_ADJ_NEMO_EULER: case MAIN_SOLVER::DISC_ADJ_NEMO_NAVIER_STOKES:
       integration_container[iZone][INST_0][ADJFLOW_SOL]->SetConvergence(false);
       if( (config_container[iZone]->GetKind_Solver() == MAIN_SOLVER::ADJ_RANS) || (config_container[iZone]->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_RANS) )
         integration_container[iZone][INST_0][ADJTURB_SOL]->SetConvergence(false);
