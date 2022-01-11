@@ -98,7 +98,7 @@ class CNEMOEulerVariable : public CFlowVariable {
    * \brief Constructor of the class.
    * \param[in] val_pressure - Value of the flow pressure (initialization value).
    * \param[in] val_massfrac - Value of the mass fraction (initialization value).
-   * \param[in] val_velocity - Value of the Mach number (initialization value).
+   * \param[in] val_mach - Value of the Mach number (initialization value).
    * \param[in] val_temperature - Value of the flow temperature (initialization value).
    * \param[in] val_temperature_ve - Value of the flow temperature_ve (initialization value).
    * \param[in] npoint - Number of points/nodes/vertices in the domain.
@@ -109,7 +109,7 @@ class CNEMOEulerVariable : public CFlowVariable {
    * \param[in] config - Definition of the particular problem.
    */
   CNEMOEulerVariable(su2double val_pressure, const su2double *val_massfrac,
-                     const su2double *val_velocity, su2double val_temperature,
+                     const su2double *val_mach, su2double val_temperature,
                      su2double val_temperature_ve, unsigned long npoint,
                      unsigned long ndim,
                      unsigned long nvar, unsigned long nvalprim,
@@ -169,7 +169,7 @@ class CNEMOEulerVariable : public CFlowVariable {
    */
   bool SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) override;
 
-   /*!
+ /*!
   * \brief Set all the primitive and secondary variables from the conserved vector.
   */
   bool Cons2PrimVar(su2double *U, su2double *V, su2double *dPdU,
@@ -179,7 +179,7 @@ class CNEMOEulerVariable : public CFlowVariable {
  /*!
   * \brief Set the conserved vector.
   */
-  bool Prim2ConsVar(su2double *U, su2double *V,CFluidModel *FluidModel);
+  bool Prim2ConsVar(su2double *U, su2double *V);
 
   /*---------------------------------------*/
   /*---   Specific variable routines    ---*/

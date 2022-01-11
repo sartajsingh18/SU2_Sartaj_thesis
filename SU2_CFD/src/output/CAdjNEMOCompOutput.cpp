@@ -123,7 +123,8 @@ void CAdjNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
 
   /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the SOLUTION variables.
   /// DESCRIPTION: Maximum residual of the adjoint density.
-  AddHistoryOutput("MAX_ADJ_DENSITY",    "max[A_Rho]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint density.", HistoryFieldType::RESIDUAL);
+  for (auto iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    AddHistoryOutput("MAX_ADJ_DENSITY_" + std::to_string(iSpecies), "max[A_Rho_" + std::to_string(iSpecies) + "]",   ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the species adjoint density " + std::to_string(iSpecies) + ".", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the adjoint momentum x-component
   AddHistoryOutput("MAX_ADJ_MOMENTUM-X", "max[A_RhoU]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint momentum x-component", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the adjoint momentum y-component
@@ -141,7 +142,8 @@ void CAdjNEMOCompOutput::SetHistoryOutputFields(CConfig *config){
 
   ///  /// BEGIN_GROUP: BGS_RES, DESCRIPTION: The Block Gauss Seidel residuals of the SOLUTION variables.
   /// DESCRIPTION: BGS residual of the adjoint density.
-  AddHistoryOutput("BGS_ADJ_DENSITY",    "bgs[A_Rho]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint density.", HistoryFieldType::RESIDUAL);
+  for (auto iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    AddHistoryOutput("BGS_ADJ_DENSITY_" + std::to_string(iSpecies), "bgs[A_Rho_" + std::to_string(iSpecies) + "]",   ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the species adjoint density " + std::to_string(iSpecies) + ".", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: BGS residual of the adjoint momentum x-component
   AddHistoryOutput("BGS_ADJ_MOMENTUM-X", "bgs[A_RhoU]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint momentum x-component", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: BGS residual of the adjoint momentum y-component

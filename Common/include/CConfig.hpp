@@ -80,7 +80,6 @@ private:
   su2double EA_ScaleFactor;       /*!< \brief Equivalent Area scaling factor */
   su2double AdjointLimit;         /*!< \brief Adjoint variable limit */
   string* ConvField;              /*!< \brief Field used for convergence check.*/
-  string ConvCriteria;            // This option is deprecated. After a grace period until 7.2.0 the usage warning should become an error.
 
   string* WndConvField;              /*!< \brief Function where to apply the windowed convergence criteria for the time average of the unsteady (single zone) flow problem. */
   unsigned short nConvField;         /*!< \brief Number of fields used to monitor convergence.*/
@@ -146,11 +145,7 @@ private:
   su2double dCMx_dCL;          /*!< \brief Fixed Cl mode derivate. */
   su2double dCMy_dCL;          /*!< \brief Fixed Cl mode derivate. */
   su2double dCMz_dCL;          /*!< \brief Fixed Cl mode derivate. */
-  su2double dCD_dCMy;          /*!< \brief Fixed Cl mode derivate. */
   su2double CL_Target;         /*!< \brief Fixed Cl mode Target Cl. */
-  su2double CM_Target;         /*!< \brief Fixed Cl mode Target CM. */
-  su2double *HTP_Min_XCoord,
-  *HTP_Min_YCoord;                   /*!< \brief Identification of the HTP. */
   TIME_MARCHING TimeMarching;        /*!< \brief Steady or unsteady (time stepping or dual time stepping) computation. */
   unsigned short Dynamic_Analysis;   /*!< \brief Static or dynamic structural analysis. */
   unsigned short nStartUpIter;       /*!< \brief Start up iterations using the fine grid. */
@@ -440,7 +435,7 @@ private:
   Unst_CFL;                    /*!< \brief Unsteady CFL number. */
 
   bool ReorientElements;       /*!< \brief Flag for enabling element reorientation. */
-  bool AddIndNeighbor;         /*!< \brief Include indirect neighbor in the agglomeration process. */
+  string CustomObjFunc;        /*!< \brief User-defined objective function. */
   unsigned short nDV,                  /*!< \brief Number of design variables. */
   nObj, nObjW;                         /*! \brief Number of objective functions. */
   unsigned short* nDV_Value;           /*!< \brief Number of values for each design variable (might be different than 1 if we allow arbitrary movement). */
@@ -640,11 +635,9 @@ private:
   iH, AoS, AoA_Offset,
   AoS_Offset, AoA_Sens;       /*!< \brief Angle of sideSlip (just external flow). */
   bool Fixed_CL_Mode;         /*!< \brief Activate fixed CL mode (external flow only). */
-  bool Fixed_CM_Mode;         /*!< \brief Activate fixed CL mode (external flow only). */
   bool Eval_dOF_dCX;          /*!< \brief Activate fixed CL mode (external flow only). */
   bool Discard_InFiles;       /*!< \brief Discard angle of attack in solution and geometry files. */
   su2double Target_CL;        /*!< \brief Specify a target CL instead of AoA (external flow only). */
-  su2double Target_CM;        /*!< \brief Specify a target CM instead of AoA (external flow only). */
   su2double Total_CM;         /*!< \brief Specify a Total CM instead of AoA (external flow only). */
   su2double Total_CD;         /*!< \brief Specify a target CD instead of AoA (external flow only). */
   su2double dCL_dAlpha;       /*!< \brief value of dCl/dAlpha. */
@@ -660,7 +653,6 @@ private:
   bool Update_AoA;                      /*!< \brief Boolean flag for whether to update the AoA for fixed lift mode on a given iteration. */
   unsigned long Update_AoA_Iter_Limit;  /*!< \brief Limit on number of iterations between AoA updates for fixed lift mode. */
   bool Finite_Difference_Mode;        /*!< \brief Flag to run the finite difference mode in fixed Cl mode. */
-  bool Update_HTPIncidence;           /*!< \brief Boolean flag for whether to update the AoA for fixed lift mode on a given iteration. */
   su2double ChargeCoeff;              /*!< \brief Charge coefficient (just for poisson problems). */
   unsigned short Cauchy_Func_Flow,    /*!< \brief Function where to apply the convergence criteria in the flow problem. */
   Cauchy_Func_AdjFlow,                /*!< \brief Function where to apply the convergence criteria in the adjoint problem. */
@@ -1069,7 +1061,6 @@ private:
   rampOutPres_coeff[3],  /*!< \brief ramp outlet pressure coefficients for the COption class. */
   jst_adj_coeff[2],      /*!< \brief artificial dissipation (adjoint) array for the COption class. */
   ad_coeff_heat[2],      /*!< \brief artificial dissipation (heat) array for the COption class. */
-  obj_coeff[5],          /*!< \brief objective array for the COption class. */
   mesh_box_length[3],    /*!< \brief mesh box length for the COption class. */
   mesh_box_offset[3],    /*!< \brief mesh box offset for the COption class. */
   geo_loc[2],            /*!< \brief SU2_GEO section locations array for the COption class. */
@@ -1151,7 +1142,7 @@ private:
   POD_KIND POD_Basis_Gen;                   /*!< \brief Type of POD basis generation (static or incremental). */
   unsigned short maxBasisDim,               /*!< \brief Maximum number of POD basis dimensions. */
   rom_save_freq;                            /*!< \brief Frequency of unsteady time steps to save. */
-  
+
   /* other NEMO configure options*/
   unsigned short nSpecies,                  /*!< \brief No of species present in flow */
   iWall_Catalytic,
@@ -1553,12 +1544,6 @@ public:
    * \return <code>TRUE</code> if CFL adaption is active; otherwise <code>FALSE</code>.
    */
   bool GetCFL_Adapt(void) const { return CFL_Adapt; }
-
-  /*!
-   * \brief Get the values of the CFL adapation.
-   * \return Value of CFL adapation
-   */
-  su2double GetHTP_Axis(unsigned short val_index) const { return htp_axis[val_index]; }
 
   /*!
    * \brief Get the value of the limits for the sections.
@@ -5193,13 +5178,9 @@ public:
   void SetWeight_ObjFunc(unsigned short val_obj, su2double val) { Weight_ObjFunc[val_obj] = val; }
 
   /*!
-   * \author H. Kline
-   * \brief Get the coefficients of the objective defined by the chain rule with primitive variables.
-   * \note This objective is only applicable to gradient calculations. Objective value must be
-   * calculated using the area averaged outlet values of density, velocity, and pressure.
-   * Gradients are w.r.t density, velocity[3], and pressure. when 2D gradient w.r.t. 3rd component of velocity set to 0.
+   * \brief Get the user expression for the custom objective function.
    */
-  su2double GetCoeff_ObjChainRule(unsigned short iVar) const { return obj_coeff[iVar]; }
+  const string& GetCustomObjFunc() const { return CustomObjFunc; }
 
   /*!
    * \brief Get the kind of sensitivity smoothing technique.
@@ -5492,12 +5473,6 @@ public:
    * \return Name of the file with the appropriate objective function extension.
    */
   string GetObjFunc_Extension(string val_filename) const;
-
-  /*!
-   * \brief Get the criteria for structural residual (relative/absolute).
-   * \return Relative/Absolute criteria for structural convergence.
-   */
-  unsigned short GetResidual_Criteria_FEM(void) const { return Res_FEM_CRIT; }
 
   /*!
    * \brief Get functional that is going to be used to evaluate the residual flow convergence.
@@ -6258,18 +6233,6 @@ public:
    * \brief Value of the weight of the CD, CL, CM optimization.
    * \return Value of the weight of the CD, CL, CM optimization.
    */
-  su2double GetdCD_dCMy(void) const { return dCD_dCMy; }
-
-  /*!
-   * \brief Value of the weight of the CD, CL, CM optimization.
-   * \return Value of the weight of the CD, CL, CM optimization.
-   */
-  su2double GetCM_Target(void) const { return CM_Target; }
-
-  /*!
-   * \brief Value of the weight of the CD, CL, CM optimization.
-   * \return Value of the weight of the CD, CL, CM optimization.
-   */
   su2double GetdCD_dCL(void) const { return dCD_dCL; }
 
   /*!
@@ -6325,12 +6288,6 @@ public:
    * \return Value of the weight of the CD, CL, CM optimization.
    */
   void SetdCM_diH(su2double val_dcm_dhi) { dCM_diH = val_dcm_dhi; }
-
-  /*!
-   * \brief Value of the weight of the CD, CL, CM optimization.
-   * \return Value of the weight of the CD, CL, CM optimization.
-   */
-  void SetdCD_dCMy(su2double val_dcd_dcmy) { dCD_dCMy = val_dcd_dcmy; }
 
   /*!
    * \brief Value of the weight of the CD, CL, CM optimization.
@@ -8352,12 +8309,6 @@ public:
    * \brief Get information about whether to use fixed CL mode.
    * \return <code>TRUE</code> if fixed CL mode is active; otherwise <code>FALSE</code>.
    */
-  bool GetFixed_CM_Mode(void) const { return Fixed_CM_Mode; }
-
-  /*!
-   * \brief Get information about whether to use fixed CL mode.
-   * \return <code>TRUE</code> if fixed CL mode is active; otherwise <code>FALSE</code>.
-   */
   bool GetEval_dOF_dCX(void) const { return Eval_dOF_dCX; }
 
   /*!
@@ -9501,25 +9452,25 @@ public:
    * \return True if specified in config file.
    */
   bool GetSave_libROM(void) const {return libROM; }
-  
+
   /*!
    * \brief Get the name of the file for libROM to save.
    * \return Filename prefix for libROM to save to (default: "su2").
    */
   string GetlibROMbase_FileName(void) const { return libROMbase_FileName; }
-  
+
   /*!
    * \brief Static or incremental toggle for POD basis generation type.
    * \return Type of POD generation type
    */
   POD_KIND GetKind_PODBasis(void) const { return POD_Basis_Gen; }
-  
+
   /*!
    * \brief Get maximum number of POD basis dimensions (default: 100).
    * \return Maximum number of POD basis vectors.
    */
   unsigned short GetMax_BasisDim(void) const { return maxBasisDim; }
-  
+
   /*!
    * \brief Get frequency of unsteady time steps to save (default: 1).
    * \return Save frequency for unsteady time steps.
