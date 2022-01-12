@@ -1448,7 +1448,7 @@ void CNEMOEulerSolver::SetReferenceValues(const CConfig& config) {
 
 }
 
-void CNEMOEulerSolver::Evaluate_ObjFunc(const CConfig *config) {
+void CNEMOEulerSolver::Evaluate_ObjFunc(const CConfig *config, CSolver**) {
 
   unsigned short iMarker_Monitoring, Kind_ObjFunc;
   su2double Weight_ObjFunc;
@@ -1772,7 +1772,7 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contai
   /*--- Set booleans from configuration parameters ---*/
   bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool viscous  = config->GetViscous();
-  bool tkeNeeded = (config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST);
+  bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST) || (config->GetKind_Turb_Model() == TURB_MODEL::SST_SUST);
 
   /*--- Allocate arrays ---*/
   su2double *Normal = new su2double[nDim];
