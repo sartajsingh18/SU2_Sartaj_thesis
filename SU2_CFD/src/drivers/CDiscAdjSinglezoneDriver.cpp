@@ -373,9 +373,6 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
   case MAIN_SOLVER::DISC_ADJ_FEM_EULER:       case MAIN_SOLVER::DISC_ADJ_FEM_NS:                 case MAIN_SOLVER::DISC_ADJ_FEM_RANS:
   case MAIN_SOLVER::DISC_ADJ_NEMO_EULER:      case MAIN_SOLVER::DISC_ADJ_NEMO_NAVIER_STOKES:
 
-
-
-
     /*--- Surface based obj. function ---*/
 
     direct_output->SetHistory_Output(geometry, solver, config, config->GetTimeIter(),
