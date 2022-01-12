@@ -230,8 +230,9 @@ public:
   /*!
    * \brief Compute weighted-sum "combo" objective output
    * \param[in] config - Definition of the particular problem.
+   * \param[in] solver - Container vector with all the solutions.
    */
-  void Evaluate_ObjFunc(const CConfig *config) override;
+  void Evaluate_ObjFunc(const CConfig *config, CSolver **solver) override;
 
   /*!
    * \brief Impose the far-field boundary condition using characteristics.

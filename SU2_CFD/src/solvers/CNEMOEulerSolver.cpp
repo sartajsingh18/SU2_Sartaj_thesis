@@ -1457,27 +1457,28 @@ void CNEMOEulerSolver::Evaluate_ObjFunc(const CConfig *config) {
 
   /*--- Loop over all monitored markers, add to the 'combo' objective ---*/
 
-  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+  if (config->GetFixed_CL_Mode()) {
+    for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
 
-    Weight_ObjFunc = config->GetWeight_ObjFunc(iMarker_Monitoring);
-    Kind_ObjFunc = config->GetKind_ObjFunc(iMarker_Monitoring);
+      Weight_ObjFunc = config->GetWeight_ObjFunc(iMarker_Monitoring);
+      Kind_ObjFunc = config->GetKind_ObjFunc(iMarker_Monitoring);
 
-    switch(Kind_ObjFunc) {
-      case DRAG_COEFFICIENT:
-        if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCD_dCL()*(SurfaceCoeff.CL[iMarker_Monitoring]);
-        if (config->GetFixed_CM_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCD_dCMy()*(SurfaceCoeff.CMy[iMarker_Monitoring]);
-        break;
-      case MOMENT_X_COEFFICIENT:
-        if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCMx_dCL()*(SurfaceCoeff.CL[iMarker_Monitoring]);
-        break;
-      case MOMENT_Y_COEFFICIENT:
-        if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCMy_dCL()*(SurfaceCoeff.CL[iMarker_Monitoring]);
-        break;
-      case MOMENT_Z_COEFFICIENT:
-        if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCMz_dCL()*(SurfaceCoeff.CL[iMarker_Monitoring]);
-        break;
-      default:
-        break;
+      switch(Kind_ObjFunc) {
+        case DRAG_COEFFICIENT:
+          Total_ComboObj -= Weight_ObjFunc*config->GetdCD_dCL()*(SurfaceCoeff.CL[iMarker_Monitoring]);
+          break;
+        case MOMENT_X_COEFFICIENT:
+          Total_ComboObj -= Weight_ObjFunc*config->GetdCMx_dCL()*(SurfaceCoeff.CL[iMarker_Monitoring]);
+          break;
+        case MOMENT_Y_COEFFICIENT:
+          Total_ComboObj -= Weight_ObjFunc*config->GetdCMy_dCL()*(SurfaceCoeff.CL[iMarker_Monitoring]);
+          break;
+        case MOMENT_Z_COEFFICIENT:
+          Total_ComboObj -= Weight_ObjFunc*config->GetdCMz_dCL()*(SurfaceCoeff.CL[iMarker_Monitoring]);
+          break;
+        default:
+          break;
+      }
     }
   }
 
