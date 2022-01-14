@@ -262,7 +262,7 @@ void CAdjNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
   /// BEGIN_GROUP: SOLUTION, DESCRIPTION: The SOLUTION variables of the adjoint solver.
   /// DESCRIPTION: Adjoint density.
   for (auto iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    AddVolumeOutput("ADJ_DENSITY_" + std::to_string(iSpecies),  "Density_" + std::to_string(iSpecies),  "SOLUTION", "Density_"  + std::to_string(iSpecies));
+    AddVolumeOutput("ADJ_DENSITY_" + std::to_string(iSpecies),  "Adjoint_Density_" + std::to_string(iSpecies),  "SOLUTION", "Adjoint_Density_"  + std::to_string(iSpecies));
   /// DESCRIPTION: Adjoint momentum x-component.
   AddVolumeOutput("ADJ_MOMENTUM-X", "Adjoint_Momentum_x", "SOLUTION", "x-component of the adjoint momentum vector");
   /// DESCRIPTION: Adjoint momentum y-component.
@@ -281,7 +281,7 @@ void CAdjNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
   /// BEGIN_GROUP: RESIDUAL, DESCRIPTION: Residuals of the SOLUTION variables.
   /// DESCRIPTION: Residual of the adjoint density.
   for (auto iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-    AddVolumeOutput("RES_ADJ_DENSITY_" + std::to_string(iSpecies), "Residual_Density_" + std::to_string(iSpecies), "RESIDUAL", "Residual of species density " + std::to_string(iSpecies));
+    AddVolumeOutput("RES_ADJ_DENSITY_" + std::to_string(iSpecies), "Residual_Adjoint_Density_" + std::to_string(iSpecies), "RESIDUAL", "Residual of species density " + std::to_string(iSpecies));
   /// DESCRIPTION: Residual of the adjoint momentum x-component.
   AddVolumeOutput("RES_ADJ_MOMENTUM-X", "Residual_Adjoint_Momentum_x", "RESIDUAL", "Residual of the adjoint x-momentum");
   /// DESCRIPTION: Residual of the adjoint momentum y-component.
