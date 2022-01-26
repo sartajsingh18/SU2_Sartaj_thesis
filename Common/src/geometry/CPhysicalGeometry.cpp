@@ -2,14 +2,14 @@
  * \file CPhysicalGeometry.cpp
  * \brief Implementation of the physical geometry class.
  * \author F. Palacios, T. Economon
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -180,6 +180,11 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
 
   }
 
+  /*--- If the gradient smoothing solver is active, allocate space for the sensitivity and initialize. ---*/
+  if (config->GetSmoothGradient()) {
+    Sensitivity.resize(nPoint,nDim) = su2double(0.0);
+  }
+
 }
 
 CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry,
@@ -268,6 +273,11 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry,
   LoadPoints(config, geometry);
   LoadVolumeElements(config, geometry);
   LoadSurfaceElements(config, geometry);
+
+  /*--- If the gradient smoothing solver is active, allocate space for the sensitivity and initialize. ---*/
+  if (config->GetSmoothGradient()) {
+    Sensitivity.resize(nPoint,nDim) = su2double(0.0);
+  }
 
   /*--- Free memory associated with the partitioning of points and elems. ---*/
 
@@ -3598,6 +3608,8 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
       config->SetMarker_All_TurbomachineryFlag(iMarker, config->GetMarker_CfgFile_TurbomachineryFlag(Marker_Tag));
       config->SetMarker_All_MixingPlaneInterface(iMarker, config->GetMarker_CfgFile_MixingPlaneInterface(Marker_Tag));
+      config->SetMarker_All_SobolevBC(iMarker, config->GetMarker_CfgFile_SobolevBC(Marker_Tag));
+
     }
 
     /*--- Send-Receive boundaries definition ---*/
@@ -3621,6 +3633,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
       config->SetMarker_All_Turbomachinery(iMarker, NO);
       config->SetMarker_All_TurbomachineryFlag(iMarker, NO);
       config->SetMarker_All_MixingPlaneInterface(iMarker, NO);
+      config->SetMarker_All_SobolevBC(iMarker, NO);
 
       for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
         if (config->GetMarker_All_SendRecv(iMarker) < 0)
@@ -4023,6 +4036,7 @@ void CPhysicalGeometry::LoadUnpartitionedSurfaceElements(CConfig        *config,
       config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
       config->SetMarker_All_TurbomachineryFlag(iMarker, config->GetMarker_CfgFile_TurbomachineryFlag(Marker_Tag));
       config->SetMarker_All_MixingPlaneInterface(iMarker, config->GetMarker_CfgFile_MixingPlaneInterface(Marker_Tag));
+      config->SetMarker_All_SobolevBC(iMarker, config->GetMarker_CfgFile_SobolevBC(Marker_Tag));
 
     }
   }
@@ -4717,7 +4731,7 @@ void CPhysicalGeometry::SetPoint_Connectivity() {
 
       jElem = nodes->GetElem(iPoint, iElem);
 
-      /*--- If we find the point iPoint in the surronding element ---*/
+      /*--- If we find the point iPoint in the surrounding element ---*/
 
       for (iNode = 0; iNode < elem[jElem]->GetnNodes(); iNode++) {
 
@@ -9955,7 +9969,7 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
 
     /*--- Write an output file---*/
 
-    if (config->GetTabular_FileFormat() == TAB_CSV) {
+    if (config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_CSV) {
       Wing_File.open("wing_description.csv", ios::out);
       if (config->GetSystemMeasurements() == US)
         Wing_File << "\"yCoord/SemiSpan\",\"Area (in^2)\",\"Max. Thickness (in)\",\"Chord (in)\",\"Leading Edge Radius (1/in)\",\"Max. Thickness/Chord\",\"Twist (deg)\",\"Curvature (1/in)\",\"Dihedral (deg)\",\"Leading Edge XLoc/SemiSpan\",\"Leading Edge ZLoc/SemiSpan\",\"Trailing Edge XLoc/SemiSpan\",\"Trailing Edge ZLoc/SemiSpan\"" << endl;
@@ -10047,7 +10061,7 @@ void CPhysicalGeometry::Compute_Wing(CConfig *config, bool original_surface,
 
     for (iPlane = 0; iPlane < nPlane; iPlane++) {
       if (Xcoord_Airfoil[iPlane].size() > 1) {
-        if (config->GetTabular_FileFormat() == TAB_CSV) {
+        if (config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_CSV) {
           Wing_File  << Ycoord_Airfoil[iPlane][0]/SemiSpan <<", "<< Area[iPlane] <<", "<< MaxThickness[iPlane] <<", "<< Chord[iPlane] <<", "<< LERadius[iPlane] <<", "<< ToC[iPlane]
                      <<", "<< Twist[iPlane] <<", "<< Curvature[iPlane] <<", "<< Dihedral[iPlane]
                      <<", "<< LeadingEdge[iPlane][0]/SemiSpan <<", "<< LeadingEdge[iPlane][2]/SemiSpan
@@ -10250,7 +10264,7 @@ void CPhysicalGeometry::Compute_Fuselage(CConfig *config, bool original_surface,
 
     /*--- Write an output file---*/
 
-    if (config->GetTabular_FileFormat() == TAB_CSV) {
+    if (config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_CSV) {
       Fuselage_File.open("fuselage_description.csv", ios::out);
       if (config->GetSystemMeasurements() == US)
         Fuselage_File << "\"x (in)\",\"Area (in^2)\",\"Length (in)\",\"Width (in)\",\"Waterline width (in)\",\"Height (in)\",\"Curvature (1/in)\",\"Generatrix Curve X (in)\",\"Generatrix Curve Y (in)\",\"Generatrix Curve Z (in)\",\"Axis Curve X (in)\",\"Axis Curve Y (in)\",\"Axis Curve Z (in)\"" << endl;
@@ -10333,7 +10347,7 @@ void CPhysicalGeometry::Compute_Fuselage(CConfig *config, bool original_surface,
 
     for (iPlane = 0; iPlane < nPlane; iPlane++) {
       if (Xcoord_Airfoil[iPlane].size() > 1) {
-        if (config->GetTabular_FileFormat() == TAB_CSV) {
+        if (config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_CSV) {
           Fuselage_File  << -Ycoord_Airfoil[iPlane][0] <<", "<< Area[iPlane] <<", "<< Length[iPlane] <<", "<< Width[iPlane] <<", "<< WaterLineWidth[iPlane] <<", "<< Height[iPlane] <<", "<< Curvature[iPlane]
                      <<", "<< -LeadingEdge[iPlane][1] <<", "<< LeadingEdge[iPlane][0]  <<", "<< LeadingEdge[iPlane][2]
                      <<", "<< -TrailingEdge[iPlane][1] <<", "<< TrailingEdge[iPlane][0]  <<", "<< TrailingEdge[iPlane][2]  << endl;
@@ -10561,7 +10575,7 @@ void CPhysicalGeometry::Compute_Nacelle(CConfig *config, bool original_surface,
 
     /*--- Write an output file---*/
 
-    if (config->GetTabular_FileFormat() == TAB_CSV) {
+    if (config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_CSV) {
       Nacelle_File.open("nacelle_description.csv", ios::out);
       if (config->GetSystemMeasurements() == US)
         Nacelle_File << "\"Theta (deg)\",\"Area (in^2)\",\"Max. Thickness (in)\",\"Chord (in)\",\"Leading Edge Radius (1/in)\",\"Max. Thickness/Chord\",\"Twist (deg)\",\"Leading Edge XLoc\",\"Leading Edge ZLoc\",\"Trailing Edge XLoc\",\"Trailing Edge ZLoc\"" << endl;
@@ -10623,7 +10637,7 @@ void CPhysicalGeometry::Compute_Nacelle(CConfig *config, bool original_surface,
       su2double theta_deg = atan2(Plane_Normal[iPlane][1], -Plane_Normal[iPlane][2])/PI_NUMBER*180 + 180;
 
       if (Xcoord_Airfoil[iPlane].size() > 1) {
-        if (config->GetTabular_FileFormat() == TAB_CSV) {
+        if (config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_CSV) {
           Nacelle_File  << theta_deg <<", "<< Area[iPlane] <<", "<< MaxThickness[iPlane] <<", "<< Chord[iPlane] <<", "<< LERadius[iPlane] <<", "<< ToC[iPlane]
           <<", "<< Twist[iPlane] <<", "<< LeadingEdge[iPlane][0] <<", "<< LeadingEdge[iPlane][2]
           <<", "<< TrailingEdge[iPlane][0] <<", "<< TrailingEdge[iPlane][2] << endl;

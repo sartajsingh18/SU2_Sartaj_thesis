@@ -2,14 +2,14 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 7.2.1 "Blackbird"
+ * \version 7.3.0 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2021, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2022, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -77,9 +77,9 @@ const unsigned int MAX_NUMBER_PERIODIC = 10;  /*!< \brief Maximum number of peri
 const unsigned int MAX_STRING_SIZE = 200;     /*!< \brief Maximum number of domains. */
 const unsigned int MAX_NUMBER_FFD = 15;       /*!< \brief Maximum number of FFDBoxes for the FFD. */
 enum: unsigned int{MAX_SOLS = 13};            /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
-const unsigned int MAX_TERMS = 6;             /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
+const unsigned int MAX_TERMS = 7;             /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 3;             /*!< \brief Maximum number of zones. */
-const unsigned int MAX_FE_KINDS = 4;          /*!< \brief Maximum number of Finite Elements. */
+const unsigned int MAX_FE_KINDS = 7;          /*!< \brief Maximum number of Finite Elements. */
 const unsigned int NO_RK_ITER = 0;            /*!< \brief No Runge-Kutta iteration. */
 
 const unsigned int OVERHEAD = 4;    /*!< \brief Overhead space above nMarker when allocating space for boundary elems (MPI + periodic). */
@@ -518,6 +518,7 @@ const int SOURCE_FIRST_TERM = 2;   /*!< \brief Position of the first source term
 const int SOURCE_SECOND_TERM = 3;  /*!< \brief Position of the second source term in the numerics container array. */
 const int CONV_BOUND_TERM = 4;     /*!< \brief Position of the convective boundary terms in the numerics container array. */
 const int VISC_BOUND_TERM = 5;     /*!< \brief Position of the viscous boundary terms in the numerics container array. */
+const int GRAD_TERM = 6;           /*!< \brief Position of the gradient smoothing terms in the numerics container array. */
 
 const int FEA_TERM = 0;      /*!< \brief Position of the finite element analysis terms in the numerics container array. */
 const int DE_TERM = 1;       /*!< \brief Position of the dielectric terms in the numerics container array. */
@@ -527,16 +528,20 @@ const int MAT_IDEALDE = 3;   /*!< \brief Position of the Ideal-DE material model
 const int MAT_KNOWLES = 4;   /*!< \brief Position of the Knowles material model. */
 
 /*!
- * \brief Types of finite elements (in 2D or 3D)
+ * \brief Types of finite elements (in 1D or 2D or 3D)
  */
+const int EL_LINE = 6;    /*!< \brief Elements of two nodes, with second order gauss quadrature (1D). */
+
 const int EL_TRIA = 0;    /*!< \brief Elements of three nodes (2D). */
 const int EL_QUAD = 1;    /*!< \brief Elements of four nodes (2D). */
+const int EL_TRIA2 = 2;   /*!< \brief Elements of three nodes (2D), with second order gauss quadrature. */
 
 const int EL_TETRA = 0;   /*!< \brief Elements of four nodes (3D). */
 const int EL_HEXA  = 1;   /*!< \brief Elements of eight nodes (3D). */
 const int EL_PYRAM = 2;   /*!< \brief Elements of five nodes (3D). */
 const int EL_PRISM = 3;   /*!< \brief Elements of six nodes (3D). */
-
+const int EL_TETRA2 = 4;  /*!< \brief Elements of four nodes, with second order gauss quadrature (3D). */
+const int EL_PYRAM2 = 5;  /*!< \brief Elements of five nodes, with third order gauss quadrature (3D). */
 
 /*!
  * \brief Types of spatial discretizations
@@ -1058,7 +1063,7 @@ static const MapType<std::string, ENUM_ROELOWDISS> RoeLowDiss_Map = {
  * \brief Types of wall functions.
  */
 enum class WALL_FUNCTIONS {
-  NONE                      ,   /*!< \brief No wall function treatment, integration to the wall. Default behavior. */
+  NONE                 ,   /*!< \brief No wall function treatment, integration to the wall. Default behavior. */
   STANDARD_FUNCTION    ,   /*!< \brief Standard wall function. */
   ADAPTIVE_FUNCTION    ,   /*!< \brief Adaptive wall function. Formulation depends on y+. */
   SCALABLE_FUNCTION    ,   /*!< \brief Scalable wall function. */
@@ -1454,7 +1459,7 @@ enum TURBO_MARKER_TYPE{
 /*!
  * \brief Types inlet boundary treatments
  */
-enum INLET_TYPE {
+enum class INLET_TYPE {
   TOTAL_CONDITIONS, /*!< \brief User specifies total pressure, total temperature, and flow direction. */
   MASS_FLOW,        /*!< \brief User specifies density and velocity (mass flow). */
   INPUT_FILE,       /*!< \brief User specifies an input file. */
@@ -1642,62 +1647,63 @@ static const MapType<std::string, ENUM_INPUT> Input_Map = {
 /*!
  * \brief Type of solution output file formats
  */
-enum ENUM_OUTPUT {
-  TECPLOT                 = 1,  /*!< \brief Tecplot format for the solution output. */
-  TECPLOT_BINARY          = 2,  /*!< \brief Tecplot binary format for the solution output. */
-  SURFACE_TECPLOT         = 3,  /*!< \brief Tecplot format for the solution output. */
-  SURFACE_TECPLOT_BINARY  = 4,  /*!< \brief Tecplot binary format for the solution output. */
-  CSV                     = 5,  /*!< \brief Comma-separated values format for the solution output. */
-  SURFACE_CSV             = 6,  /*!< \brief Comma-separated values format for the solution output. */
-  PARAVIEW                = 7,  /*!< \brief Paraview ASCII format for the solution output. */
-  PARAVIEW_BINARY         = 8,  /*!< \brief Paraview binary format for the solution output. */
-  SURFACE_PARAVIEW        = 9,  /*!< \brief Paraview ASCII format for the solution output. */
-  SURFACE_PARAVIEW_BINARY = 10, /*!< \brief Paraview binary format for the solution output. */
-  MESH                    = 11, /*!< \brief SU2 mesh format. */
-  RESTART_BINARY          = 12, /*!< \brief SU2 binary restart format. */
-  RESTART_ASCII           = 13, /*!< \brief SU2 ASCII restart format. */
-  STL                     = 14, /*!< \brief STL ASCII format for surface solution output. */
-  STL_BINARY              = 15, /*!< \brief STL binary format for surface solution output. Not implemented yet. */
-  PARAVIEW_XML            = 16, /*!< \brief Paraview XML with binary data format */
-  SURFACE_PARAVIEW_XML    = 17, /*!< \brief Surface Paraview XML with binary data format */
-  PARAVIEW_MULTIBLOCK     = 18, /*!< \brief Paraview XML Multiblock */
-  CGNS                    = 19, /*!< \brief CGNS format. */
-  SURFACE_CGNS            = 20  /*!< \brief CGNS format. */
+enum class OUTPUT_TYPE {
+  TECPLOT_ASCII,           /*!< \brief Tecplot format for the solution output. */
+  TECPLOT_BINARY,          /*!< \brief Tecplot binary format for the solution output. */
+  SURFACE_TECPLOT_ASCII,   /*!< \brief Tecplot format for the solution output. */
+  SURFACE_TECPLOT_BINARY,  /*!< \brief Tecplot binary format for the solution output. */
+  CSV,                     /*!< \brief Comma-separated values format for the solution output. */
+  SURFACE_CSV,             /*!< \brief Comma-separated values format for the solution output. */
+  PARAVIEW_ASCII,          /*!< \brief Paraview ASCII format for the solution output. */
+  PARAVIEW_LEGACY_BINARY,  /*!< \brief Paraview binary format for the solution output. */
+  SURFACE_PARAVIEW_ASCII,  /*!< \brief Paraview ASCII format for the solution output. */
+  SURFACE_PARAVIEW_LEGACY_BINARY, /*!< \brief Paraview binary format for the solution output. */
+  MESH,                    /*!< \brief SU2 mesh format. */
+  RESTART_BINARY,          /*!< \brief SU2 binary restart format. */
+  RESTART_ASCII,           /*!< \brief SU2 ASCII restart format. */
+  PARAVIEW_XML,            /*!< \brief Paraview XML with binary data format */
+  SURFACE_PARAVIEW_XML,    /*!< \brief Surface Paraview XML with binary data format */
+  PARAVIEW_MULTIBLOCK,     /*!< \brief Paraview XML Multiblock */
+  CGNS,                    /*!< \brief CGNS format. */
+  SURFACE_CGNS,            /*!< \brief CGNS format. */
+  STL_ASCII,               /*!< \brief STL ASCII format for surface solution output. */
+  STL_BINARY,              /*!< \brief STL binary format for surface solution output. Not implemented yet. */
 };
-static const MapType<std::string, ENUM_OUTPUT> Output_Map = {
-  MakePair("TECPLOT_ASCII", TECPLOT)
-  MakePair("TECPLOT", TECPLOT_BINARY)
-  MakePair("SURFACE_TECPLOT_ASCII", SURFACE_TECPLOT)
-  MakePair("SURFACE_TECPLOT", SURFACE_TECPLOT_BINARY)
-  MakePair("CSV", CSV)
-  MakePair("SURFACE_CSV", SURFACE_CSV)
-  MakePair("PARAVIEW_ASCII", PARAVIEW)
-  MakePair("PARAVIEW_LEGACY", PARAVIEW_BINARY)
-  MakePair("SURFACE_PARAVIEW_ASCII", SURFACE_PARAVIEW)
-  MakePair("SURFACE_PARAVIEW_LEGACY", SURFACE_PARAVIEW_BINARY)
-  MakePair("PARAVIEW", PARAVIEW_XML)
-  MakePair("SURFACE_PARAVIEW", SURFACE_PARAVIEW_XML)
-  MakePair("PARAVIEW_MULTIBLOCK", PARAVIEW_MULTIBLOCK)
-  MakePair("RESTART_ASCII", RESTART_ASCII)
-  MakePair("RESTART", RESTART_BINARY)
-  MakePair("CGNS", CGNS)
-  MakePair("SURFACE_CGNS", SURFACE_CGNS)
-  MakePair("STL", STL)
-  MakePair("STL_BINARY", STL_BINARY)
+static const MapType<std::string, OUTPUT_TYPE> Output_Map = {
+  MakePair("TECPLOT_ASCII", OUTPUT_TYPE::TECPLOT_ASCII)
+  MakePair("TECPLOT", OUTPUT_TYPE::TECPLOT_BINARY)
+  MakePair("SURFACE_TECPLOT_ASCII", OUTPUT_TYPE::SURFACE_TECPLOT_ASCII)
+  MakePair("SURFACE_TECPLOT", OUTPUT_TYPE::SURFACE_TECPLOT_BINARY)
+  MakePair("CSV", OUTPUT_TYPE::CSV)
+  MakePair("SURFACE_CSV", OUTPUT_TYPE::SURFACE_CSV)
+  MakePair("PARAVIEW_ASCII", OUTPUT_TYPE::PARAVIEW_ASCII)
+  MakePair("PARAVIEW_LEGACY", OUTPUT_TYPE::PARAVIEW_LEGACY_BINARY)
+  MakePair("SURFACE_PARAVIEW_ASCII", OUTPUT_TYPE::SURFACE_PARAVIEW_ASCII)
+  MakePair("SURFACE_PARAVIEW_LEGACY", OUTPUT_TYPE::SURFACE_PARAVIEW_LEGACY_BINARY)
+  MakePair("PARAVIEW", OUTPUT_TYPE::PARAVIEW_XML)
+  MakePair("SURFACE_PARAVIEW", OUTPUT_TYPE::SURFACE_PARAVIEW_XML)
+  MakePair("PARAVIEW_MULTIBLOCK", OUTPUT_TYPE::PARAVIEW_MULTIBLOCK)
+  MakePair("MESH", OUTPUT_TYPE::MESH)
+  MakePair("RESTART_ASCII", OUTPUT_TYPE::RESTART_ASCII)
+  MakePair("RESTART", OUTPUT_TYPE::RESTART_BINARY)
+  MakePair("CGNS", OUTPUT_TYPE::CGNS)
+  MakePair("SURFACE_CGNS", OUTPUT_TYPE::SURFACE_CGNS)
+  MakePair("STL_ASCII", OUTPUT_TYPE::STL_ASCII)
+  MakePair("STL_BINARY", OUTPUT_TYPE::STL_BINARY)
 };
 
 /*!
  * \brief Return true if format is one of the Paraview options.
  */
-inline bool isParaview(ENUM_OUTPUT format) {
+inline bool isParaview(OUTPUT_TYPE format) {
   switch(format) {
-    case PARAVIEW:
-    case PARAVIEW_BINARY:
-    case SURFACE_PARAVIEW:
-    case SURFACE_PARAVIEW_BINARY:
-    case PARAVIEW_XML:
-    case SURFACE_PARAVIEW_XML:
-    case PARAVIEW_MULTIBLOCK:
+    case OUTPUT_TYPE::PARAVIEW_ASCII:
+    case OUTPUT_TYPE::PARAVIEW_LEGACY_BINARY:
+    case OUTPUT_TYPE::SURFACE_PARAVIEW_ASCII:
+    case OUTPUT_TYPE::SURFACE_PARAVIEW_LEGACY_BINARY:
+    case OUTPUT_TYPE::PARAVIEW_XML:
+    case OUTPUT_TYPE::SURFACE_PARAVIEW_XML:
+    case OUTPUT_TYPE::PARAVIEW_MULTIBLOCK:
       return true;
     default:
       return false;
@@ -1707,12 +1713,12 @@ inline bool isParaview(ENUM_OUTPUT format) {
 /*!
  * \brief Return true if format is one of the Tecplot options.
  */
-inline bool isTecplot(ENUM_OUTPUT format) {
+inline bool isTecplot(OUTPUT_TYPE format) {
   switch(format) {
-    case TECPLOT:
-    case TECPLOT_BINARY:
-    case SURFACE_TECPLOT:
-    case SURFACE_TECPLOT_BINARY:
+    case OUTPUT_TYPE::TECPLOT_ASCII:
+    case OUTPUT_TYPE::TECPLOT_BINARY:
+    case OUTPUT_TYPE::SURFACE_TECPLOT_ASCII:
+    case OUTPUT_TYPE::SURFACE_TECPLOT_BINARY:
       return true;
     default:
       return false;
@@ -1722,13 +1728,13 @@ inline bool isTecplot(ENUM_OUTPUT format) {
 /*!
  * \brief Type of solution output file formats
  */
-enum ENUM_TAB_OUTPUT {
-  TAB_CSV = 1,            /*!< \brief Comma-separated values format for the solution output. */
-  TAB_TECPLOT = 2         /*!< \brief Tecplot format for the solution output. */
+enum class TAB_OUTPUT {
+  TAB_CSV,            /*!< \brief Comma-separated values format for the solution output. */
+  TAB_TECPLOT         /*!< \brief Tecplot format for the solution output. */
 };
-static const MapType<std::string, ENUM_TAB_OUTPUT> TabOutput_Map = {
-  MakePair("CSV", TAB_CSV)
-  MakePair("TECPLOT", TAB_TECPLOT)
+static const MapType<std::string, TAB_OUTPUT> TabOutput_Map = {
+  MakePair("CSV", TAB_OUTPUT::TAB_CSV)
+  MakePair("TECPLOT", TAB_OUTPUT::TAB_TECPLOT)
 };
 
 /*!
@@ -2263,6 +2269,31 @@ enum class POD_KIND {
 static const MapType<std::string, POD_KIND> POD_Map = {
   MakePair("STATIC_POD",      POD_KIND::STATIC)
   MakePair("INCREMENTAL_POD", POD_KIND::INCREMENTAL)
+};
+
+/*!
+ * \brief Type of operation for the linear system solver, changes the source of solver options.
+ */
+enum class LINEAR_SOLVER_MODE {
+  STANDARD,        /*!< \brief Operate in standard mode. */
+  MESH_DEFORM,     /*!< \brief Operate in mesh deformation mode. */
+  GRADIENT_MODE,   /*!< \brief Operate in gradient smoothing mode. */
+};
+
+/*!
+ * \brief mode of operation for the sobolev smoothing solver.
+ */
+enum class ENUM_SOBOLEV_MODUS {
+  NONE,                 /*!< \brief Default option if none is choosen. */
+  PARAM_LEVEL_COMPLETE, /*!< \brief Operate on parameter level. */
+  MESH_LEVEL,           /*!< \brief Operate on mesh level. */
+  ONLY_GRAD,            /*!< \brief Flag to only compute the original gradient. */
+};
+static const MapType<std::string, ENUM_SOBOLEV_MODUS> Sobolev_Modus_Map = {
+  MakePair("NONE",                 ENUM_SOBOLEV_MODUS::NONE)
+  MakePair("PARAM_LEVEL_COMPLETE", ENUM_SOBOLEV_MODUS::PARAM_LEVEL_COMPLETE)
+  MakePair("MESH_LEVEL",           ENUM_SOBOLEV_MODUS::MESH_LEVEL)
+  MakePair("ONLY_GRADIENT",        ENUM_SOBOLEV_MODUS::ONLY_GRAD)
 };
 
 #undef MakePair
