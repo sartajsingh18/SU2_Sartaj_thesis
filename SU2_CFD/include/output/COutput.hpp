@@ -2,7 +2,7 @@
  * \file COutput.hpp
  * \brief Headers of the output class.
  * \author T.Albring
- * \version 7.3.0 "Blackbird"
+ * \version 7.3.1 "Blackbird"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -154,6 +154,10 @@ protected:
   std::vector<string> requestedScreenFields;
   /*! \brief Number of requested screen field names in the config file. */
   unsigned short nRequestedScreenFields;
+
+  /*! \brief Caches to avoid hashing the output maps to retrieve field values. */
+  std::vector<const su2double*> requestedHistoryFieldCache;
+  std::vector<const HistoryOutputField*> requestedScreenFieldCache;
 
   PrintingToolbox::CTablePrinter* convergenceTable;     //!< Convergence  output table structure
   PrintingToolbox::CTablePrinter* multiZoneHeaderTable; //!< Multizone header output structure
