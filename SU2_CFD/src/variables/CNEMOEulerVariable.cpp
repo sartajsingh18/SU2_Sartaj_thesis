@@ -46,6 +46,10 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
 
   unsigned short iDim, iSpecies;
 
+  const bool dual_time = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                         (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
+  const bool classical_rk4 = (config->GetKind_TimeIntScheme_Flow() == CLASSICAL_RK4_EXPLICIT);
+
   /*--- Setting variable amounts ---*/
 
   nSpecies        = config->GetnSpecies();
@@ -109,6 +113,16 @@ CNEMOEulerVariable::CNEMOEulerVariable(su2double val_pressure,
   }
 
   Solution_Old = Solution;
+
+  if (classical_rk4) Solution_New = Solution;
+
+  /*--- Allocate and initializate solution for dual time strategy ---*/
+
+  if (dual_time) {
+    Solution_time_n = Solution;
+    Solution_time_n1 = Solution;
+  }
+
 }
 
 void CNEMOEulerVariable::SetVelocity2(unsigned long iPoint) {
@@ -259,40 +273,4 @@ bool CNEMOEulerVariable::Cons2PrimVar(su2double *U, su2double *V,
   V[H_INDEX] = (U[nSpecies+nDim] + V[P_INDEX])/V[RHO_INDEX];
 
   return nonPhys;
-}
-
-bool CNEMOEulerVariable::Prim2ConsVar(su2double *V, su2double *U) {
-
-  /*---Useful variables ---*/
-  vector<su2double> rhos;
-  rhos.resize(nSpecies,0.0);
-
-  /*--- Set Indices ---*/
-  //Make these in a general location
-  //unsigned short RHO_INDEX = nodes->GetRhoIndex();
-  //unsigned short T_INDEX   = nodes->GetTIndex();
-  //unsigned short TVE_INDEX = nodes->GetTveIndex();
-  //unsigned short VEL_INDEX = nodes->GetVelIndex();
-
-  /*--- Set densities and mass fraction ---*/
-  for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++){
-    U[iSpecies]    = V[iSpecies];
-    rhos[iSpecies] = V[iSpecies];
-  }
-
-  /*--- Set momentum and compute v^2 ---*/
-  //TODO: geometry toolbox
-  su2double sqvel = 0.0;
-  for (unsigned short iDim = 0; iDim < nDim; iDim++){
-    U[nSpecies+iDim] = V[RHO_INDEX]*V[VEL_INDEX+iDim];
-    sqvel           += V[VEL_INDEX+iDim]*V[VEL_INDEX+iDim];
-  }
-
-  /*--- Set the fluidmodel and recompute energies ---*/
-  fluidmodel->SetTDStateRhosTTv( rhos, V[T_INDEX], V[TVE_INDEX]);
-  const auto& Energies = fluidmodel->ComputeMixtureEnergies();
-
-  /*--- Set conservative energies ---*/
-  U[nSpecies+nDim]   = V[RHO_INDEX]*(Energies[0]+0.5*sqvel);
-  U[nSpecies+nDim+1] = V[RHO_INDEX]*(Energies[1]);
 }
