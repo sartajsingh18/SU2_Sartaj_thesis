@@ -111,10 +111,10 @@ void BFMInterpolator::Interpolate(const ReadBFMInput * reader, CSolver * solver_
         // Computing the coordinates along the right-up axis and the perpendicular axis.
         su2double right_up_coord = GeometryToolbox::DotProduct(3, right_up_axis, radial);
         su2double perp_coord = GeometryToolbox::DotProduct(3, perp_axis, radial);
-
+        rad=1.0;
         // Computing the tangential angle according to the left-hand rule.
         tang = atan2(perp_coord, right_up_coord) + PI_NUMBER;
-
+        tang=0.0;
         // Interpolating the BFM parameters according to the axial, radial, and tangential coordinates of the current mesh node.
         Interp3D(ax, rad, tang, iPoint, reader, solver_container);
         
@@ -226,6 +226,7 @@ bool BFMInterpolator::Interp_ax_rad(su2double axis, su2double radius, unsigned l
                         interp_solution->at(iVar) = DW_average(axis, radius, ax_cell, rad_cell, val_cell);
                         
                     }
+                    interp_solution->at(I_RADIAL_COORDINATE)=radius;
                     interp_solution->at(I_ROTATION_FACTOR) = reader->GetRotationFactor(iRow);
                     interp_solution->at(I_BLADE_COUNT) = reader->GetBladeCount(iRow);
                     interp_solution->at(I_BODY_FORCE_FACTOR) = 1;
@@ -236,6 +237,7 @@ bool BFMInterpolator::Interp_ax_rad(su2double axis, su2double radius, unsigned l
         ++iRad;
         
     }
+    interp_solution->at(I_RADIAL_COORDINATE)=radius;
     return found;
 }
 

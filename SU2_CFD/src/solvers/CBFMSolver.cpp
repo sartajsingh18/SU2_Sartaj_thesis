@@ -363,7 +363,7 @@ su2double CBFMSolver::ComputeNormalForce_Thollet(CSolver **solver_container, uns
     blade_count = nodes->GetAuxVar(iPoint, I_BLADE_COUNT);
 
     pitch = 2*PI_NUMBER*radius / blade_count;
-
+    pitch =1.0;
     normal_force = PI_NUMBER * K_Mach * delta * pow(W_mag, 2) / (blockage_factor * pitch * abs(n_theta));
 
     return normal_force;
@@ -431,7 +431,7 @@ su2double CBFMSolver::ComputeParallelForce_Thollet(CSolver **solver_container, u
     blade_count = nodes->GetAuxVar(iPoint, I_BLADE_COUNT);
 
     pitch = 2*PI_NUMBER * radius / blade_count;
-
+    pitch=1.0;
     blockage_factor = nodes->GetAuxVar(iPoint, I_BLOCKAGE_FACTOR);
 
     n_theta = nodes->GetAuxVar(iPoint, I_CAMBER_NORMAL_TANGENTIAL);
@@ -534,6 +534,8 @@ void CBFMSolver::ComputeBlockageSources(CSolver **solver_container, unsigned lon
     pressure = solver_container[FLOW_SOL]->GetNodes()->GetPressure(iPoint);
     // Getting interpolated metal blockage factor
     b = nodes->GetAuxVar(iPoint, I_BLOCKAGE_FACTOR);
+    su2double q = 0.0; //10000/density; // divided by volume
+    source_energy = q;
 
     // Looping over dimensions to compute the divergence source terms
     for(unsigned short iDim=0; iDim<nDim; ++iDim){
@@ -629,6 +631,13 @@ void CBFMSolver::ComputeCylProjections(const CGeometry *geometry, const CConfig 
                 nodes->SetRadialProjection(iPoint, iDim, radial_vector[iDim]/radius);
                 
             }
+            nodes->SetTangentialProjection(iPoint,0,0.0);
+            nodes->SetTangentialProjection(iPoint,1,0.0);
+            nodes->SetTangentialProjection(iPoint,2,1.0);
+
+            nodes->SetRadialProjection(iPoint,0,0.0);
+            nodes->SetRadialProjection(iPoint,1,1.0);
+            nodes->SetRadialProjection(iPoint,2,0.0);
         }
 			
 	}
