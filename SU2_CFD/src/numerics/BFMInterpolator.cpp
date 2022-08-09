@@ -171,7 +171,15 @@ void BFMInterpolator::Interp3D(su2double axis, su2double radius, su2double theta
             }else{
                 var_interp = interp_solution_lower[iVar];
             }
+
+
             solver_container->GetNodes()->SetAuxVar(iPoint, iVar, var_interp);
+
+
+
+
+
+
         // In case the node lies outside the bladed region, default values are assigned.
         }else{
             if(iVar == I_BLOCKAGE_FACTOR){

@@ -81,10 +81,10 @@ CBFMSolver::CBFMSolver(CGeometry *geometry, CConfig *config, unsigned short iMes
     BFM_Parameter_Names[I_LEADING_EDGE_AXIAL] = "ax_LE";
 
     // Commencing blade geometry interpolation
-    if(rank == MASTER_NODE)
-        cout << "Interpolating blade geometry parameters to nodes" << endl;
-    Interpolator = new BFMInterpolator(BFM_File_Reader, this, geometry, config);
-    Interpolator->Interpolate(BFM_File_Reader, this, geometry);
+    //if(rank == MASTER_NODE)
+    //    cout << "Interpolating blade geometry parameters to nodes" << endl;
+    //Interpolator = new BFMInterpolator(BFM_File_Reader, this, geometry, config);
+    //Interpolator->Interpolate(BFM_File_Reader, this, geometry);
     SU2_OMP_BARRIER
     // Setting the solution as the metal blockage factor so the periodic, spatial gradient can be computed
     for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint){
@@ -307,7 +307,7 @@ void CBFMSolver::ComputeBFMSources_Thollet(CSolver **solver_container, unsigned 
 		}
     // Computing the blade friction factor
     // TODO: Allow for the user to set the coefficients
-    C_f = 0.0592 * pow(Re_ax, -0.2);
+    C_f = 3.00 * pow(Re_ax, -0.2); //0.0592 is the standard coefficient value
     // Computing the parallel, loss generating body force
     F_p = -C_f * (1 / pitch) * (1 / abs(Nt)) * (1 / b) * W_mag * W_mag;
 
@@ -424,7 +424,7 @@ su2double CBFMSolver::ComputeParallelForce_Thollet(CSolver **solver_container, u
 		}
     // Computing the blade friction factor
     // TODO: Allow for the user to set the coefficients
-    C_f = 0.0592 * pow(Re_ax, -0.2);
+    C_f = 3* pow(Re_ax, -0.2);
 
     radius = nodes->GetAuxVar(iPoint, I_RADIAL_COORDINATE);
 
@@ -534,7 +534,7 @@ void CBFMSolver::ComputeBlockageSources(CSolver **solver_container, unsigned lon
     pressure = solver_container[FLOW_SOL]->GetNodes()->GetPressure(iPoint);
     // Getting interpolated metal blockage factor
     b = nodes->GetAuxVar(iPoint, I_BLOCKAGE_FACTOR);
-    su2double q = 0.0; //10000/density; // divided by volume
+    su2double q = -10000000; //10000/density; // divided by volume
     source_energy = q;
 
     // Looping over dimensions to compute the divergence source terms
