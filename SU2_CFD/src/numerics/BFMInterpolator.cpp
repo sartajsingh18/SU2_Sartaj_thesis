@@ -289,8 +289,8 @@ su2double BFMInterpolator::DW_average(su2double axis, su2double radius, vector<s
         if(distance == 0){
             return val_cell.at(i_node);
         }
-        enumerator += (1/distance)*val_cell.at(i_node);
-        denomintor += (1/distance);
+        enumerator += val_cell.at(i_node); //(1/distance)*val_cell.at(i_node);
+        denomintor += 1; //(1/distance);
     }
     return enumerator/denomintor;
 }

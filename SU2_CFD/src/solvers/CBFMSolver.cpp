@@ -81,11 +81,13 @@ CBFMSolver::CBFMSolver(CGeometry *geometry, CConfig *config, unsigned short iMes
     BFM_Parameter_Names[I_LEADING_EDGE_AXIAL] = "ax_LE";
 
     // Commencing blade geometry interpolation
-    //if(rank == MASTER_NODE)
-    //    cout << "Interpolating blade geometry parameters to nodes" << endl;
-    //Interpolator = new BFMInterpolator(BFM_File_Reader, this, geometry, config);
-    //Interpolator->Interpolate(BFM_File_Reader, this, geometry);
+    if(rank == MASTER_NODE)
+        cout << "Interpolating blade geometry parameters to nodes" << endl;
+    Interpolator = new BFMInterpolator(BFM_File_Reader, this, geometry, config);
+    Interpolator->Interpolate(BFM_File_Reader, this, geometry);
     SU2_OMP_BARRIER
+
+    
     // Setting the solution as the metal blockage factor so the periodic, spatial gradient can be computed
     for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint){
         nodes->SetSolution(iPoint, 0, nodes->GetAuxVar(iPoint, I_BLOCKAGE_FACTOR));
@@ -254,7 +256,7 @@ void CBFMSolver::ComputeBFMSources_Thollet(CSolver **solver_container, unsigned 
     su2double ax, ax_le, // Axial node coordiate [m], blade leading edge coordinate[m]
      mu, // Dynamic viscosity [kg m^-1 s^-2]
      density, // Fluid density [kg m^-3]
-     Re_ax, C_f; // Axial Reynolds number[-], blade friction factor [-]
+     Re_ax, C_f,C_viscous,C_inertial; // Axial Reynolds number[-], blade friction factor [-]
 
     // Getting the blade geometric parameters from the auxilary variable
     b = nodes->GetAuxVar(iPoint, I_BLOCKAGE_FACTOR);			// Metal blockage factor
@@ -307,9 +309,11 @@ void CBFMSolver::ComputeBFMSources_Thollet(CSolver **solver_container, unsigned 
 		}
     // Computing the blade friction factor
     // TODO: Allow for the user to set the coefficients
-    C_f = 3.00 * pow(Re_ax, -0.2); //0.0592 is the standard coefficient value
+    //C_f3.00 * pow(Re_ax, -0.2); //0.0592 is the standard coefficient value
+    C_viscous =0*2.1e7 *mu/density; //Coefficient for the inertial loss term in Porous media HEX modelling: Insert 1/alpha value
+    C_inertial = 0*0.5*30; // Coefficient for the viscous loss term in PMM HEX model: Insert C2 Value
     // Computing the parallel, loss generating body force
-    F_p = -C_f * (1 / pitch) * (1 / abs(Nt)) * (1 / b) * W_mag * W_mag;
+    F_p = - (1 / pitch) * (1 / abs(Nt)) * (1 / b) * (C_inertial*W_mag * W_mag+ C_viscous*W_mag) ;
 
     // Transforming the normal and force component to cyllindrical coordinates
     F_ax = F_n * (cos(delta) * Nx - sin(delta) * (W_px / (W_p + 1e-6))) + F_p * W_ax / (W_mag + 1e-6);		// Axial body-force component
@@ -397,7 +401,7 @@ su2double CBFMSolver::ComputeNormalForce_Hall(CSolver **solver_container, unsign
 }
 
 su2double CBFMSolver::ComputeParallelForce_Thollet(CSolver **solver_container, unsigned long iPoint, su2double * W_cyl){
-    su2double C_f, Re_ax;
+    su2double C_inertial, C_viscous, Re_ax;
     su2double ax_le, ax, density, mu, W_mag;
     su2double n_theta, blockage_factor, radius, blade_count, pitch, parallel_force;
 
@@ -424,8 +428,10 @@ su2double CBFMSolver::ComputeParallelForce_Thollet(CSolver **solver_container, u
 		}
     // Computing the blade friction factor
     // TODO: Allow for the user to set the coefficients
-    C_f = 3* pow(Re_ax, -0.2);
-
+    //C_f = 0;//3* pow(Re_ax, -0.2);
+    C_viscous =0 *mu/density; //Coefficient for the inertial loss term in Porous media HEX modelling: Insert 1/alpha value
+    C_inertial = 0*0.5; // Coefficient for the viscous loss term in PMM HEX model: Insert C2 Value
+    
     radius = nodes->GetAuxVar(iPoint, I_RADIAL_COORDINATE);
 
     blade_count = nodes->GetAuxVar(iPoint, I_BLADE_COUNT);
@@ -436,7 +442,7 @@ su2double CBFMSolver::ComputeParallelForce_Thollet(CSolver **solver_container, u
 
     n_theta = nodes->GetAuxVar(iPoint, I_CAMBER_NORMAL_TANGENTIAL);
 
-    parallel_force = C_f * pow(W_mag, 2) / (pitch * blockage_factor * abs(n_theta));
+    parallel_force = (C_inertial * pow(W_mag, 2)+ C_viscous*W_mag) / (pitch * blockage_factor * abs(n_theta));
 
     return parallel_force;
 }
@@ -498,7 +504,7 @@ void CBFMSolver::ComputeBFM_Sources(CSolver **solver_container, unsigned long iP
     /* Step 4: Computing the body-force energy source term. */
     radius = nodes->GetAuxVar(iPoint, I_RADIAL_COORDINATE);
     rotFac = nodes->GetAuxVar(iPoint, I_ROTATION_FACTOR);
-    energy_source = rotFac * Omega * F_BF_Cyl[1] * radius;
+    energy_source = 0 ;//rotFac * Omega * F_BF_Cyl[1] * radius;
 
     /* Step 5: Substituting the momentum and energy source terms. */
     BFM_sources[0] = 0;
@@ -534,7 +540,7 @@ void CBFMSolver::ComputeBlockageSources(CSolver **solver_container, unsigned lon
     pressure = solver_container[FLOW_SOL]->GetNodes()->GetPressure(iPoint);
     // Getting interpolated metal blockage factor
     b = nodes->GetAuxVar(iPoint, I_BLOCKAGE_FACTOR);
-    su2double q = -10000000; //10000/density; // divided by volume
+    su2double q = -0 *density/(0.8*1.25e-4); //density; // divided by volume
     source_energy = q;
 
     // Looping over dimensions to compute the divergence source terms
