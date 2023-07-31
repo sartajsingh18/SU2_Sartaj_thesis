@@ -319,7 +319,7 @@ void CBFMSolver::ComputeBFMSources_Thollet(CSolver **solver_container, unsigned 
     F_ax = F_n * (cos(delta) * Nx - sin(delta) * (W_px / (W_p + 1e-6))) + F_p * W_ax / (W_mag + 1e-6);		// Axial body-force component
     F_r = F_n * (cos(delta) * Nr - sin(delta) * (W_pr / (W_p + 1e-6))) + F_p * W_r / (W_mag + 1e-6);		// Radial body-force component
     F_th = F_n * (cos(delta) * Nt - sin(delta) * (W_pth / (W_p + 1e-6)))+ F_p * W_th / (W_mag + 1e-6);	// Tangential body-force component
-    e_source = F_ax*W_ax ; // This was changed from: rotFac * Rotation_rate * radius * F_th				// Energy source term
+    e_source = rotFac * Rotation_rate * radius * F_th	;	// Energy source term
     
     // Appending Cartesial body-forces to body-force vector
     for(int iDim=0; iDim<nDim; iDim++){
@@ -540,7 +540,7 @@ void CBFMSolver::ComputeBlockageSources(CSolver **solver_container, unsigned lon
     pressure = solver_container[FLOW_SOL]->GetNodes()->GetPressure(iPoint);
     // Getting interpolated metal blockage factor
     b = nodes->GetAuxVar(iPoint, I_BLOCKAGE_FACTOR);
-    su2double q = -0 *density/(0.8*1.25e-4); //density; // divided by volume
+    su2double q = 0; //density; // divided by volume
     source_energy = q;
 
     // Looping over dimensions to compute the divergence source terms
@@ -556,22 +556,21 @@ void CBFMSolver::ComputeBlockageSources(CSolver **solver_container, unsigned lon
         source_momentum[iDim] = 0;
         // Updating density and energy source terms
         source_density += density * velocity * blockage_gradient / b;
-        // source_energy -= density * energy * velocity * blockage_gradient / b; // Was a += before change
+        source_energy += density * (energy + pressure/density)* velocity * blockage_gradient / b; 
 
         // Looping over dimensions to compute momentum source terms due to metal blockage
         for(unsigned short jDim=0; jDim<nDim; jDim++){
             velocity_j = solver_container[FLOW_SOL]->GetNodes()->GetVelocity(iPoint, jDim);
             source_momentum[iDim] += (density * velocity * velocity_j)* blockage_gradient / b;
         }
-        source_energy += source_momentum[iDim]*velocity -density * energy * velocity * blockage_gradient / b; //source_momentum[iDim]*velocity ;//- density * energy * velocity * blockage_gradient / b; //This was added
-    }
+    
 
     // Subtracting metal blockage source terms from body force source terms
     BFM_sources[0] -= source_density;
     for(unsigned short iDim=0; iDim<nDim; ++iDim){
         BFM_sources[iDim + 1] -= source_momentum[iDim];
     }
-    BFM_sources[nDim + 1] += source_energy; //Was a -=
+    BFM_sources[nDim + 1] -= source_energy; //
 
 
 }
