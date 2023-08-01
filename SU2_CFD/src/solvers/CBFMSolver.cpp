@@ -564,7 +564,7 @@ void CBFMSolver::ComputeBlockageSources(CSolver **solver_container, unsigned lon
             source_momentum[iDim] += (density * velocity * velocity_j)* blockage_gradient / b;
         }
     
-
+    }
     // Subtracting metal blockage source terms from body force source terms
     BFM_sources[0] -= source_density;
     for(unsigned short iDim=0; iDim<nDim; ++iDim){
